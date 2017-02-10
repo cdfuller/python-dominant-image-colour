@@ -6,9 +6,18 @@ Several debugging methods are available which can help to
 show you the results of the algorithm.
 """
 
-import Image
+# https://github.com/ZeevG/python-dominant-image-colour
+
+from PIL import Image
 import random
 import numpy
+import argparse
+import json
+
+ap = argparse.ArgumentParser()
+ap.add_argument("-i", "--image", required = True, help = "Path to the image")
+ap.add_argument("-c", "--clusters", required = False, type = int, default = 3, help = "# of cluters")
+args = vars(ap.parse_args())
 
 
 class Cluster(object):
@@ -52,7 +61,7 @@ class Kmeans(object):
         self.clusters = [None for i in range(self.k)]
         self.oldClusters = None
 
-        randomPixels = random.sample(self.pixels, self.k)
+        randomPixels = random.sample(list(self.pixels), self.k)
 
         for idx in range(self.k):
             self.clusters[idx] = Cluster()
@@ -64,7 +73,7 @@ class Kmeans(object):
 
             self.oldClusters = [cluster.centroid for cluster in self.clusters]
 
-            print iterations
+            # print(iterations)
 
             for pixel in self.pixels:
                 self.assignClusters(pixel)
@@ -117,7 +126,9 @@ class Kmeans(object):
     def showCentroidColours(self):
 
         for cluster in self.clusters:
-            image = Image.new("RGB", (200, 200), cluster.centroid)
+            c = cluster.centroid
+            t = (int(c[0]), int(c[1]), int(c[2]))
+            image = Image.new("RGB", (200, 200), t)
             image.show()
 
     def showClustering(self):
@@ -142,19 +153,34 @@ class Kmeans(object):
         colourMap = Image.fromarray(localPixels)
         colourMap.show()
 
+    def toJSON(self):
+        output = { "clusters": []}
+        for cluster in self.clusters:
+            c = {   
+                "red": int(cluster.centroid[0]),
+                "green": int(cluster.centroid[1]),
+                "blue": int(cluster.centroid[2])
+                }
+            output["clusters"].append(c);
+
+        output["image"] = args["image"]
+
+        return json.dumps(output)
+
+
 
 def main():
 
-    image = Image.open("images/cows.jpg")
+    image = Image.open(args["image"])
 
-    k = Kmeans()
+    k = Kmeans(k=args["clusters"])
 
     result = k.run(image)
-    print result
-
-    k.showImage()
-    k.showCentroidColours()
-    k.showClustering()
+    print(k.toJSON())
+    # import code; code.interact(local=dict(globals(), **locals()))
+    # k.showImage()
+    # k.showCentroidColours()
+    # k.showClustering()
 
 if __name__ == "__main__":
     main()
